@@ -68,9 +68,11 @@ public class JNIGridnetSharedMemVecClient {
     final Response[] rs;
     final Responses responses;
 
+    final ExecutorService pool;
+
     public JNIGridnetSharedMemVecClient(int a_num_selfplayenvs, int a_num_envs, int a_max_steps, RewardFunctionInterface[] a_rfs,
             String a_micrortsPath, String mapPath, AI[] a_ai2s, UnitTypeTable a_utt, boolean partial_obs,
-            IntBuffer obsBuffer, IntBuffer unitMaskBuffer, IntBuffer actionMaskBuffer) throws Exception {
+            IntBuffer obsBuffer, IntBuffer unitMaskBuffer, IntBuffer actionMaskBuffer, int threadPoolSize) throws Exception {
         maxSteps = a_max_steps;
         utt = a_utt;
         rfs = a_rfs;
@@ -109,6 +111,12 @@ public class JNIGridnetSharedMemVecClient {
         done = new boolean[s1][rfs.length];
         responses = new Responses(null, null, null);
         rs = new Response[s1];
+
+        if (threadPoolSize > 0) {
+            pool = Executors.newFixedThreadPool(threadPoolSize);
+        } else {
+            pool = null;
+        }
     }
 
     public Responses reset(int[] players) throws Exception {
@@ -145,9 +153,34 @@ public class JNIGridnetSharedMemVecClient {
             }
         }
 
+        List<Future<Response>> stepResults = null;
+        if (pool != null) {
+            final List<Callable<Response>> stepRequests = new ArrayList<>();
+
+            for (int i = selfPlayClients.length*2; i < players.length; i++) {
+                final int clientInd = i-selfPlayClients.length*2;
+                final int playerInd = i;
+                stepRequests.add(() -> {
+                    try {
+                        return clients[clientInd].gameStep(action[playerInd], players[playerInd]);
+                    } catch (Exception e) {
+                        // xxx(okachiaev): likely need log it here
+                        // not sure what is the best cource of actions here
+                        return new Response(null, null, null, null);
+                    }
+                });
+            }
+
+            stepResults = pool.invokeAll(stepRequests);
+        }
+
         for (int i = selfPlayClients.length*2; i < players.length; i++) {
             envSteps[i] += 1;
-            rs[i] = clients[i-selfPlayClients.length*2].gameStep(action[i], players[i]);
+            if (null == stepResults) {
+                rs[i] = clients[i-selfPlayClients.length*2].gameStep(action[i], players[i]);
+            } else {
+                rs[i] = stepResults.get(i-selfPlayClients.length*2).get();
+            }
             if (rs[i].done[0] || envSteps[i] >= maxSteps) {
                 clients[i-selfPlayClients.length*2].reset(players[i]);
                 rs[i].done[0] = true;
@@ -162,13 +195,31 @@ public class JNIGridnetSharedMemVecClient {
         return responses;
     }
 
-    public void getMasks(int player) throws Exception {
+    public void getMasks(final int player) throws Exception {
         for (int i = 0; i < selfPlayClients.length; i++) {
             selfPlayClients[i].getMasks(0);
             selfPlayClients[i].getMasks(1);
         }
+
+        List<Future<Boolean>> maskResults = null;
+        if (pool != null) {
+            final List<Callable<Boolean>> maskRequests = new ArrayList<>();
+            for (int i = 0; i < clients.length; i++) {
+                final int clientIndex = i;
+                maskRequests.add(() -> {
+                    clients[clientIndex].getMasks(player);
+                    return true;
+                });
+            }
+            maskResults = pool.invokeAll(maskRequests);
+        }
+
         for (int i = 0; i < clients.length; i++) {
-            clients[i].getMasks(player);
+            if (null == maskResults) {
+                clients[i].getMasks(player);
+            } else {
+                maskResults.get(i).get();
+            }
         }
     }
 
@@ -182,6 +233,10 @@ public class JNIGridnetSharedMemVecClient {
             for (JNIGridnetSharedMemClientSelfPlay client: selfPlayClients) {
                 client.close();
             }
+        }
+
+        if (pool != null) {
+            pool.shutdownNow();
         }
     }
 }
