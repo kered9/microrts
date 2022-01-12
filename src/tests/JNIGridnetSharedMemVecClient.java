@@ -56,7 +56,7 @@ public class JNIGridnetSharedMemVecClient {
     public final int[] envSteps; 
     public final RewardFunctionInterface[] rfs;
     public final UnitTypeTable utt;
-    public final boolean partialObs = false;
+    public final boolean partialObs;
     public final String mapPath;
 
     // storage
@@ -94,7 +94,7 @@ public class JNIGridnetSharedMemVecClient {
         selfPlayClients = new JNIGridnetSharedMemClientSelfPlay[a_num_selfplayenvs/2];
         for (int i = 0; i < selfPlayClients.length; i++) {
             int clientOffset = i*2;
-            selfPlayClients[i] = new JNIGridnetSharedMemClientSelfPlay(a_rfs, a_micrortsPath, mapPath, a_utt, partialObs
+            selfPlayClients[i] = new JNIGridnetSharedMemClientSelfPlay(a_rfs, a_micrortsPath, mapPath, a_utt, partialObs,
                 clientOffset, this.obsBuffer, this.unitMaskBuffer, this.actionMaskBuffer);
         }
         clients = new JNIGridnetSharedMemClient[a_num_envs];
