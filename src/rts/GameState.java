@@ -10,6 +10,7 @@ import org.jdom.Element;
 import rts.units.Unit;
 import rts.units.UnitType;
 import rts.units.UnitTypeTable;
+import util.NDBuffer;
 import util.Pair;
 import util.XMLWriter;
 
@@ -30,6 +31,7 @@ public class GameState {
 
     protected int [][][][] matrixObservation;
     public static final int numFeatureMaps = 5;
+    public static final int numFeaturePlanes = 27;
 
     /**
      * Initializes the GameState with a PhysicalGameState and a UnitTypeTable
@@ -814,6 +816,27 @@ public class GameState {
         }
 
         return matrixObservation[player];
+    }
+
+     /*
+    | Observation Features | Planes | Description                                             |
+    |----------------------|--------|---------------------------------------------------------|
+    | Hit Points           | 5      | 0,1,2,3,>=4                                             |
+    | Resources            | 5      | 0,1,2,3,>=4                                             |
+    | Owner                | 3      | player 1,-, player 2                                    |
+    | Unit Types           | 8      | -, resource, base, barrack,worker, light, heavy, ranged |
+    | Current Action       | 6      | -, move, harvest, return, produce, attack               |
+    */
+    public void getBufferObservation(int player, int clientIndex, NDBuffer buffer) {
+        buffer.resetSegment(new int[]{clientIndex});
+
+        for (int i = 0; i < pgs.units.size(); i++) {
+            Unit u = pgs.units.get(i);
+            UnitActionAssignment uaa = unitActions.get(u);
+            buffer.set(new int[]{clientIndex, u.getY(), u.getX(), 0+Math.min(u.getHitPoints(), 5)}, 1);
+            buffer.set(new int[]{clientIndex, u.getY(), u.getX(), 5+Math.min(u.getHitPoints(), 5)}, 1);
+            buffer.set(new int[]{clientIndex, u.getY(), u.getX(), 10+((u.getPlayer()+player)%2)  }, 1);
+        }
     }
 
     /**

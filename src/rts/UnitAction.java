@@ -14,6 +14,7 @@ import java.util.Random;
 
 import org.jdom.Element;
 import rts.units.*;
+import util.NDBuffer;
 import util.XMLWriter;
 
 /**
@@ -596,6 +597,42 @@ public class UnitAction {
                     int relative_x = ua.x - u.getX();
                     int relative_y = ua.y - u.getY();
                     mask[idxOffset+6+4+4+4+4+utt.getUnitTypes().size()+(centerCoordinate+relative_y)*maxAttackRange+(centerCoordinate+relative_x)] = 1;
+                    break;
+                }
+            }
+        }
+    }
+
+    public static void getValidActionBuffer(Unit u, GameState gs, UnitTypeTable utt, NDBuffer mask, int maxAttackRange, int[] idxOffset) {
+        List<UnitAction> uas = u.getUnitActions(gs);
+        int centerCoordinate = maxAttackRange / 2;
+        for (UnitAction ua:uas) {
+            mask.set(idxOffset, ua.type, 1);
+            switch (ua.type) {
+                case TYPE_NONE: {
+                    break;
+                }
+                case TYPE_MOVE: {
+                    mask.set(idxOffset, 6+ua.parameter, 1);
+                    break;
+                }
+                case TYPE_HARVEST: {
+                    mask.set(idxOffset, 6+4+ua.parameter, 1);
+                    break;
+                }
+                case TYPE_RETURN: {
+                    mask.set(idxOffset, 6+4+4+ua.parameter, 1);
+                    break;
+                }
+                case TYPE_PRODUCE: {
+                    mask.set(idxOffset, 6+4+4+4+ua.parameter, 1);
+                    mask.set(idxOffset, 6+4+4+4+4+ua.unitType.ID, 1);
+                    break;
+                }
+                case TYPE_ATTACK_LOCATION: {
+                    int relative_x = ua.x - u.getX();
+                    int relative_y = ua.y - u.getY();
+                    mask.set(idxOffset, 6+4+4+4+4+utt.getUnitTypes().size()+(centerCoordinate+relative_y)*maxAttackRange+(centerCoordinate+relative_x), 1);
                     break;
                 }
             }
