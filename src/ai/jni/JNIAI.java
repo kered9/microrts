@@ -35,6 +35,7 @@ import rts.GameState;
 import rts.InvalidPlayerActionStats;
 import rts.PlayerAction;
 import rts.units.UnitTypeTable;
+import util.NDBuffer;
 import util.Pair;
 import util.XMLWriter;
 
@@ -73,6 +74,13 @@ public class JNIAI extends AIWithComputationBudget implements JNIInterface {
 
     public PlayerAction getAction(int player, GameState gs, int[][] action) throws Exception {
         Pair<PlayerAction, InvalidPlayerActionStats> p = PlayerAction.fromActionArrays(action, gs, utt, player, maxAttackRadius);
+        p.m_a.fillWithNones(gs, player, 1);
+        ipas = p.m_b;
+        return p.m_a;
+    }
+
+    public PlayerAction getActionFromBuffer(int player, GameState gs, int clientOffset, NDBuffer action) throws Exception {
+        Pair<PlayerAction, InvalidPlayerActionStats> p = PlayerAction.fromActionBuffer(clientOffset, action, gs, utt, player, maxAttackRadius);
         p.m_a.fillWithNones(gs, player, 1);
         ipas = p.m_b;
         return p.m_a;

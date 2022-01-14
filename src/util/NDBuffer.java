@@ -47,6 +47,17 @@ public class NDBuffer {
         }
     }
 
+    public void getSegment(int[] segment, int[] dest) {
+        int offset = 0;
+        for (int i = 0; i < segment.length; i++) {
+            offset += segment[i] * offsets[i];
+        }
+
+        for (int pos = 0; pos < offsets[segment.length-1]; pos++) {
+            dest[pos] = buffer.get(offset+pos);
+        }
+    }
+
     public void set(int[] point, int value) {
         this.set(point, 0, value);
     }
@@ -61,6 +72,10 @@ public class NDBuffer {
 
     public IntBuffer getBuffer() {
         return this.buffer;
+    }
+
+    public int size(int pos) {
+        return dims[pos];
     }
 
 }

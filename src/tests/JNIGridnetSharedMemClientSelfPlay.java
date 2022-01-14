@@ -55,7 +55,7 @@ public class JNIGridnetSharedMemClientSelfPlay {
 
     // Internal State
     PhysicalGameStateJFrame w;
-    public JNIInterface[] ais = new JNIInterface[2];
+    public JNIAI[] ais = new JNIAI[2];
     PhysicalGameState pgs;
     GameState gs;
     GameState[] playergs = new GameState[2];
@@ -71,17 +71,19 @@ public class JNIGridnetSharedMemClientSelfPlay {
     final NDBuffer obsBuffer;
     final NDBuffer unitMaskBuffer;
     final NDBuffer actionMaskBuffer;
+    final NDBuffer actionBuffer;
     double[][] rewards = new double[2][];
     boolean[][] dones = new boolean[2][];
     Response[] response = new Response[2];
     PlayerAction[] pas = new PlayerAction[2];
 
     public JNIGridnetSharedMemClientSelfPlay(RewardFunctionInterface[] a_rfs, String a_micrortsPath, String a_mapPath, UnitTypeTable a_utt, boolean partial_obs,
-            int clientOffset, NDBuffer obsBuffer, NDBuffer unitMaskBuffer, NDBuffer actionMaskBuffer) throws Exception{
+            int clientOffset, NDBuffer obsBuffer, NDBuffer unitMaskBuffer, NDBuffer actionMaskBuffer, NDBuffer actionBuffer) throws Exception{
         this.clientOffset = clientOffset;
         this.obsBuffer = obsBuffer;
         this.unitMaskBuffer = unitMaskBuffer;
         this.actionMaskBuffer = actionMaskBuffer;
+        this.actionBuffer = actionBuffer;
 
         micrortsPath = a_micrortsPath;
         mapPath = a_mapPath;
@@ -123,14 +125,14 @@ public class JNIGridnetSharedMemClientSelfPlay {
         return data.getData();
     }
 
-    public void gameStep(int[][] action1, int[][] action2) throws Exception {
+    public void gameStep() throws Exception {
         TraceEntry te  = new TraceEntry(gs.getPhysicalGameState().clone(), gs.getTime());
         for (int i = 0; i < numPlayers; i++) {
             playergs[i] = gs;
             if (partialObs) {
                 playergs[i] = new PartiallyObservableGameState(gs, i);
             }
-            pas[i] = i == 0 ? ais[i].getAction(i, playergs[0], action1) : ais[i].getAction(i, playergs[1], action2);
+            pas[i] = ais[i].getActionFromBuffer(i, playergs[i], clientOffset+i, actionBuffer);
             gs.issueSafe(pas[i]);
             te.addPlayerAction(pas[i].clone());
         }

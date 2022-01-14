@@ -50,6 +50,9 @@ import tests.JNIGridnetClientSelfPlay;
  * 
  */
 public class JNIGridnetSharedMemVecClient {
+
+    public static final int ACTION_DIM = 7;
+
     public final JNIGridnetSharedMemClient[] clients;
     public final JNIGridnetSharedMemClientSelfPlay[] selfPlayClients;
     public final int maxSteps;
@@ -63,6 +66,7 @@ public class JNIGridnetSharedMemVecClient {
     final NDBuffer obsBuffer;
     final NDBuffer unitMaskBuffer;
     final NDBuffer actionMaskBuffer;
+    final NDBuffer actionBuffer;
     final double[][] reward;
     final boolean[][] done;
     final Response[] rs;
@@ -72,7 +76,8 @@ public class JNIGridnetSharedMemVecClient {
 
     public JNIGridnetSharedMemVecClient(int a_num_selfplayenvs, int a_num_envs, int a_max_steps, RewardFunctionInterface[] a_rfs,
             String a_micrortsPath, String mapPath, AI[] a_ai2s, UnitTypeTable a_utt, boolean partial_obs,
-            IntBuffer obsBuffer, IntBuffer unitMaskBuffer, IntBuffer actionMaskBuffer, int threadPoolSize) throws Exception {
+            IntBuffer obsBuffer, IntBuffer unitMaskBuffer, IntBuffer actionMaskBuffer, IntBuffer actionBuffer,
+            int threadPoolSize) throws Exception {
         maxSteps = a_max_steps;
         utt = a_utt;
         rfs = a_rfs;
@@ -90,6 +95,7 @@ public class JNIGridnetSharedMemVecClient {
         this.obsBuffer = new NDBuffer(obsBuffer, new int[]{s1, pgs.getHeight(), pgs.getWidth(), GameState.numFeaturePlanes});
         this.unitMaskBuffer = new NDBuffer(unitMaskBuffer, new int[]{s1, pgs.getHeight(), pgs.getWidth()});
         this.actionMaskBuffer = new NDBuffer(actionMaskBuffer, new int[]{s1, pgs.getHeight(), pgs.getWidth(), actionMaskNumEntries});
+        this.actionBuffer = new NDBuffer(actionBuffer, new int[]{s1, pgs.getHeight() * pgs.getWidth(), 1+ACTION_DIM});
 
         // initialize clients
         envSteps = new int[a_num_selfplayenvs + a_num_envs];
@@ -97,13 +103,13 @@ public class JNIGridnetSharedMemVecClient {
         for (int i = 0; i < selfPlayClients.length; i++) {
             int clientOffset = i*2;
             selfPlayClients[i] = new JNIGridnetSharedMemClientSelfPlay(a_rfs, a_micrortsPath, mapPath, a_utt, partialObs,
-                clientOffset, this.obsBuffer, this.unitMaskBuffer, this.actionMaskBuffer);
+                clientOffset, this.obsBuffer, this.unitMaskBuffer, this.actionMaskBuffer, this.actionBuffer);
         }
         clients = new JNIGridnetSharedMemClient[a_num_envs];
         for (int i = 0; i < clients.length; i++) {
             int clientOffset = i+selfPlayClients.length*2;
             clients[i] = new JNIGridnetSharedMemClient(a_rfs, this.mapPath, a_ai2s[i], a_utt, partialObs,
-                clientOffset, this.obsBuffer, this.unitMaskBuffer, this.actionMaskBuffer);
+                clientOffset, this.obsBuffer, this.unitMaskBuffer, this.actionMaskBuffer, this.actionBuffer);
         }
 
         // initialize storage
@@ -137,9 +143,9 @@ public class JNIGridnetSharedMemVecClient {
         return responses;
     }
 
-    public Responses gameStep(int[][][] action, int[] players) throws Exception {
+    public Responses gameStep(int[] players) throws Exception {
         for (int i = 0; i < selfPlayClients.length; i++) {
-            selfPlayClients[i].gameStep(action[i*2], action[i*2+1]);
+            selfPlayClients[i].gameStep();
             rs[i*2] = selfPlayClients[i].getResponse(0);
             rs[i*2+1] = selfPlayClients[i].getResponse(1);
             envSteps[i*2] += 1;
@@ -162,8 +168,9 @@ public class JNIGridnetSharedMemVecClient {
                 final int playerInd = i;
                 stepRequests.add(() -> {
                     try {
-                        return clients[clientInd].gameStep(action[playerInd], players[playerInd]);
+                        return clients[clientInd].gameStep(players[playerInd]);
                     } catch (Exception e) {
+                        e.printStackTrace();
                         // xxx(okachiaev): likely need log it here
                         // not sure what is the best cource of actions here
                         return new Response(null, null, null, null);
@@ -177,7 +184,7 @@ public class JNIGridnetSharedMemVecClient {
         for (int i = selfPlayClients.length*2; i < players.length; i++) {
             envSteps[i] += 1;
             if (null == stepResults) {
-                rs[i] = clients[i-selfPlayClients.length*2].gameStep(action[i], players[i]);
+                rs[i] = clients[i-selfPlayClients.length*2].gameStep(players[i]);
             } else {
                 rs[i] = stepResults.get(i-selfPlayClients.length*2).get();
             }

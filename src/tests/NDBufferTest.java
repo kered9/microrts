@@ -36,6 +36,10 @@ public class NDBufferTest {
 
         System.out.println(Arrays.toString(ndbuff.getBuffer().array()));
         assert sumBuffer(ndbuff) == 100;
+
+        final int[] dest = new int[3];
+        ndbuff.getSegment(new int[]{0, 1}, dest);
+        System.out.println(Arrays.toString(dest));
     }
     
 }

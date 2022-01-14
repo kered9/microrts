@@ -62,7 +62,7 @@ public class JNIGridnetSharedMemClient {
     public int renderTheme = PhysicalGameStatePanel.COLORSCHEME_WHITE;
     public int maxAttackRadius;
     PhysicalGameStateJFrame w;
-    public JNIInterface ai1;
+    public JNIAI ai1;
 
     final int clientOffset;
 
@@ -70,6 +70,7 @@ public class JNIGridnetSharedMemClient {
     final NDBuffer obsBuffer;
     final NDBuffer unitMaskBuffer;
     final NDBuffer actionMaskBuffer;
+    final NDBuffer actionBuffer;
     double[] rewards;
     boolean[] dones;
     Response response;
@@ -77,11 +78,12 @@ public class JNIGridnetSharedMemClient {
     PlayerAction pa2;
 
     public JNIGridnetSharedMemClient(RewardFunctionInterface[] a_rfs, String mapPath, AI a_ai2, UnitTypeTable a_utt, boolean partial_obs,
-            int clientOffset, NDBuffer obsBuffer, NDBuffer unitMaskBuffer, NDBuffer actionMaskBuffer) throws Exception{
+            int clientOffset, NDBuffer obsBuffer, NDBuffer unitMaskBuffer, NDBuffer actionMaskBuffer, NDBuffer actionBuffer) throws Exception{
         this.clientOffset = clientOffset;
         this.obsBuffer = obsBuffer;
         this.unitMaskBuffer = unitMaskBuffer;
         this.actionMaskBuffer = actionMaskBuffer;
+        this.actionBuffer = actionBuffer;
         this.mapPath = mapPath;
         partialObs = partial_obs;
         
@@ -119,7 +121,7 @@ public class JNIGridnetSharedMemClient {
         return data.getData();
     }
 
-    public Response gameStep(int[][] action, int player) throws Exception {
+    public Response gameStep(int player) throws Exception {
         if (partialObs) {
             player1gs = new PartiallyObservableGameState(gs, player);
             player2gs = new PartiallyObservableGameState(gs, 1 - player);
@@ -127,7 +129,7 @@ public class JNIGridnetSharedMemClient {
             player1gs = gs;
             player2gs = gs;
         }
-        pa1 = ai1.getAction(player, player1gs, action);
+        pa1 = ai1.getActionFromBuffer(player, player1gs, clientOffset, actionBuffer);
         pa2 = ai2.getAction(1 - player, player2gs);
         gs.issueSafe(pa1);
         gs.issueSafe(pa2);
