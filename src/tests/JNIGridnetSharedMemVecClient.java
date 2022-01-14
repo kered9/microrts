@@ -95,7 +95,7 @@ public class JNIGridnetSharedMemVecClient {
         this.obsBuffer = new NDBuffer(obsBuffer, new int[]{s1, pgs.getHeight(), pgs.getWidth(), GameState.numFeaturePlanes});
         this.unitMaskBuffer = new NDBuffer(unitMaskBuffer, new int[]{s1, pgs.getHeight(), pgs.getWidth()});
         this.actionMaskBuffer = new NDBuffer(actionMaskBuffer, new int[]{s1, pgs.getHeight(), pgs.getWidth(), actionMaskNumEntries});
-        this.actionBuffer = new NDBuffer(actionBuffer, new int[]{s1, pgs.getHeight() * pgs.getWidth(), 1+ACTION_DIM});
+        this.actionBuffer = new NDBuffer(actionBuffer, new int[]{s1, pgs.getHeight() * pgs.getWidth(), ACTION_DIM});
 
         // initialize clients
         envSteps = new int[a_num_selfplayenvs + a_num_envs];

@@ -806,7 +806,20 @@ public class UnitAction {
      * @return
      */
     public static UnitAction fromActionArray(int[] action, UnitTypeTable utt, GameState gs, Unit u, int maxAttackRange) {
-        int actionType = action[1];
+        return fromActionArrayWithOffset(action, utt, gs, u, maxAttackRange, 1);
+    }
+
+    /**
+     * Creates a UnitAction from an action array
+     * expects [x_coordinate(x) * y_coordinate(y), a_t(6), p_move(4), p_harvest(4), p_return(4), p_produce_direction(4), 
+     * p_produce_unit_type(z), p_attack_location_x_coordinate(x) * p_attack_location_y_coordinate(y), frameskip(n)]
+     *
+     * @param o
+     * @param utt
+     * @return
+     */
+    public static UnitAction fromActionArrayWithOffset(int[] action, UnitTypeTable utt, GameState gs, Unit u, int maxAttackRange, int offset) {
+        int actionType = action[0+offset];
         UnitAction ua = new UnitAction(actionType);
         int centerCoordinate = maxAttackRange / 2;
         switch (actionType) {
@@ -814,24 +827,24 @@ public class UnitAction {
                 break;
             }
             case TYPE_MOVE: {
-                ua.parameter = action[2];
+                ua.parameter = action[1+offset];
                 break;
             }
             case TYPE_HARVEST: {
-                ua.parameter = action[3];
+                ua.parameter = action[2+offset];
                 break;
             }
             case TYPE_RETURN: {
-                ua.parameter = action[4];
+                ua.parameter = action[3+offset];
                 break;
             }
             case TYPE_PRODUCE: {
-                ua.parameter = action[5];
-                ua.unitType = utt.getUnitType(action[6]);
+                ua.parameter = action[4+offset];
+                ua.unitType = utt.getUnitType(action[5+offset]);
             }
             case TYPE_ATTACK_LOCATION: {
-                int relative_x = (action[7] % maxAttackRange - centerCoordinate);
-                int relative_y = (action[7] / maxAttackRange - centerCoordinate);
+                int relative_x = (action[6+offset] % maxAttackRange - centerCoordinate);
+                int relative_y = (action[6+offset] / maxAttackRange - centerCoordinate);
                 ua.x = u.getX() + relative_x;
                 ua.y = u.getY() + relative_y;
                 break;

@@ -448,7 +448,7 @@ public class PlayerAction {
 
         for(int i=0; i<actions.size(1); i++) {
             actions.getSegment(new int[]{clientOffset, i}, action);
-            final Unit u = gs.pgs.getUnitAt(action[0] % gs.pgs.width, action[0] / gs.pgs.width);
+            final Unit u = gs.pgs.getUnitAt(i % gs.pgs.width, i / gs.pgs.width);
             UnitActionAssignment uaa = gs.unitActions.get(u);
             if (u == null) {
                 ipas.numInvalidActionNull += 1;
@@ -459,7 +459,7 @@ public class PlayerAction {
             }
 
             if (u != null && u.getPlayer() == currentPlayer && uaa == null) {
-                UnitAction ua = UnitAction.fromActionArray(action, utt, gs, u, maxAttackRadius);
+                UnitAction ua = UnitAction.fromActionArrayWithOffset(action, utt, gs, u, maxAttackRadius, 0);
                 // execute the action if the following happens
                 // 1. The selected unit is *not* null.
                 // 2. The unit selected is owned by the current player
