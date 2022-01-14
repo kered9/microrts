@@ -830,16 +830,27 @@ public class GameState {
     public void getBufferObservation(int player, int clientIndex, NDBuffer buffer) {
         buffer.resetSegment(new int[]{clientIndex});
 
-        for (int i = 0; i < pgs.units.size(); i++) {
-            final Unit u = pgs.units.get(i);
-            final UnitActionAssignment uaa = unitActions.get(u);
-            final int unitActionType = (null == uaa) ? UnitAction.TYPE_NONE : uaa.action.type;
+        for (int y=0; y<pgs.getHeight(); y++) {
+            for (int x=0; x<pgs.getWidth(); x++) {
+                final Unit u = pgs.getUnitAt(x, y);
+                if (null == u) {
+                    buffer.set(new int[]{clientIndex, y, x, 0}, 1);
+                    buffer.set(new int[]{clientIndex, y, x, 5}, 1);
+                    buffer.set(new int[]{clientIndex, y, x, 10}, 1);
+                    buffer.set(new int[]{clientIndex, y, x, 13}, 1);
+                    buffer.set(new int[]{clientIndex, y, x, 21}, 1);
+                } else {
+                    final UnitActionAssignment uaa = unitActions.get(u);
+                    final int playerOffset = (-1 == u.getPlayer()) ? 0 : 1+((u.getPlayer()+player)%2);
+                    final int unitActionType = (null == uaa) ? UnitAction.TYPE_NONE : uaa.action.type;
 
-            buffer.set(new int[]{clientIndex, u.getY(), u.getX(), 0+Math.min(u.getHitPoints(), 4)}, 1);
-            buffer.set(new int[]{clientIndex, u.getY(), u.getX(), 5+Math.min(u.getResources(), 4)}, 1);
-            buffer.set(new int[]{clientIndex, u.getY(), u.getX(), 10+1+((u.getPlayer()+player)%2)}, 1);
-            buffer.set(new int[]{clientIndex, u.getY(), u.getX(), 13+1+u.getType().ID            }, 1);
-            buffer.set(new int[]{clientIndex, u.getY(), u.getX(), 21+unitActionType              }, 1);
+                    buffer.set(new int[]{clientIndex, u.getY(), u.getX(), 0+Math.min(u.getHitPoints(), 4)}, 1);
+                    buffer.set(new int[]{clientIndex, u.getY(), u.getX(), 5+Math.min(u.getResources(), 4)}, 1);
+                    buffer.set(new int[]{clientIndex, u.getY(), u.getX(), 10+playerOffset                }, 1);
+                    buffer.set(new int[]{clientIndex, u.getY(), u.getX(), 13+1+u.getType().ID            }, 1);
+                    buffer.set(new int[]{clientIndex, u.getY(), u.getX(), 21+unitActionType              }, 1);
+                }
+            }
         }
     }
 
