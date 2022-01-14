@@ -64,7 +64,6 @@ public class JNIGridnetSharedMemVecClient {
 
     // storage
     final NDBuffer obsBuffer;
-    final NDBuffer unitMaskBuffer;
     final NDBuffer actionMaskBuffer;
     final NDBuffer actionBuffer;
     final double[][] reward;
@@ -76,7 +75,7 @@ public class JNIGridnetSharedMemVecClient {
 
     public JNIGridnetSharedMemVecClient(int a_num_selfplayenvs, int a_num_envs, int a_max_steps, RewardFunctionInterface[] a_rfs,
             String a_micrortsPath, String mapPath, AI[] a_ai2s, UnitTypeTable a_utt, boolean partial_obs,
-            IntBuffer obsBuffer, IntBuffer unitMaskBuffer, IntBuffer actionMaskBuffer, IntBuffer actionBuffer,
+            IntBuffer obsBuffer, IntBuffer actionMaskBuffer, IntBuffer actionBuffer,
             int threadPoolSize) throws Exception {
         maxSteps = a_max_steps;
         utt = a_utt;
@@ -93,7 +92,6 @@ public class JNIGridnetSharedMemVecClient {
 
         // initialize shared storage
         this.obsBuffer = new NDBuffer(obsBuffer, new int[]{s1, pgs.getHeight(), pgs.getWidth(), GameState.numFeaturePlanes});
-        this.unitMaskBuffer = new NDBuffer(unitMaskBuffer, new int[]{s1, pgs.getHeight(), pgs.getWidth()});
         this.actionMaskBuffer = new NDBuffer(actionMaskBuffer, new int[]{s1, pgs.getHeight(), pgs.getWidth(), actionMaskNumEntries});
         this.actionBuffer = new NDBuffer(actionBuffer, new int[]{s1, pgs.getHeight() * pgs.getWidth(), ACTION_DIM});
 
@@ -103,13 +101,13 @@ public class JNIGridnetSharedMemVecClient {
         for (int i = 0; i < selfPlayClients.length; i++) {
             int clientOffset = i*2;
             selfPlayClients[i] = new JNIGridnetSharedMemClientSelfPlay(a_rfs, a_micrortsPath, mapPath, a_utt, partialObs,
-                clientOffset, this.obsBuffer, this.unitMaskBuffer, this.actionMaskBuffer, this.actionBuffer);
+                clientOffset, this.obsBuffer, this.actionMaskBuffer, this.actionBuffer);
         }
         clients = new JNIGridnetSharedMemClient[a_num_envs];
         for (int i = 0; i < clients.length; i++) {
             int clientOffset = i+selfPlayClients.length*2;
             clients[i] = new JNIGridnetSharedMemClient(a_rfs, this.mapPath, a_ai2s[i], a_utt, partialObs,
-                clientOffset, this.obsBuffer, this.unitMaskBuffer, this.actionMaskBuffer, this.actionBuffer);
+                clientOffset, this.obsBuffer, this.actionMaskBuffer, this.actionBuffer);
         }
 
         // initialize storage

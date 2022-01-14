@@ -69,7 +69,6 @@ public class JNIGridnetSharedMemClientSelfPlay {
 
     // storage
     final NDBuffer obsBuffer;
-    final NDBuffer unitMaskBuffer;
     final NDBuffer actionMaskBuffer;
     final NDBuffer actionBuffer;
     double[][] rewards = new double[2][];
@@ -78,10 +77,9 @@ public class JNIGridnetSharedMemClientSelfPlay {
     PlayerAction[] pas = new PlayerAction[2];
 
     public JNIGridnetSharedMemClientSelfPlay(RewardFunctionInterface[] a_rfs, String a_micrortsPath, String a_mapPath, UnitTypeTable a_utt, boolean partial_obs,
-            int clientOffset, NDBuffer obsBuffer, NDBuffer unitMaskBuffer, NDBuffer actionMaskBuffer, NDBuffer actionBuffer) throws Exception{
+            int clientOffset, NDBuffer obsBuffer, NDBuffer actionMaskBuffer, NDBuffer actionBuffer) throws Exception{
         this.clientOffset = clientOffset;
         this.obsBuffer = obsBuffer;
-        this.unitMaskBuffer = unitMaskBuffer;
         this.actionMaskBuffer = actionMaskBuffer;
         this.actionBuffer = actionBuffer;
 
@@ -161,7 +159,6 @@ public class JNIGridnetSharedMemClientSelfPlay {
     }
 
     public void getMasks(int player) throws Exception {
-        unitMaskBuffer.resetSegment(new int[]{clientOffset+player});
         actionMaskBuffer.resetSegment(new int[]{clientOffset+player});
 
         for (int i = 0; i < pgs.getUnits().size(); i++) {
@@ -169,7 +166,6 @@ public class JNIGridnetSharedMemClientSelfPlay {
             UnitActionAssignment uaa = gs.getUnitActions().get(u);
             if (u.getPlayer() == player && uaa == null) {
                 final int[] idxOffset = new int[]{clientOffset+player, u.getY(), u.getX()};
-                unitMaskBuffer.set(idxOffset, 1);
                 UnitAction.getValidActionBuffer(u, gs, utt, actionMaskBuffer, maxAttackRadius, idxOffset);
             }
         }
