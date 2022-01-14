@@ -144,8 +144,27 @@ public class JNIGridnetSharedMemVecClient {
     }
 
     public Responses gameStep(int[] players) throws Exception {
+        List<Future<Boolean>> selfPlayStepResults = null;
+        if (pool != null) {
+            final List<Callable<Boolean>> selfPlayStepRequests = new ArrayList<>();
+
+            for (int i = 0; i < selfPlayClients.length; i++) {
+                final int clientInd = i;
+                selfPlayStepRequests.add(() -> {
+                    selfPlayClients[clientInd].gameStep();
+                    return true;
+                });
+            }
+
+            selfPlayStepResults = pool.invokeAll(selfPlayStepRequests);
+        }
+
         for (int i = 0; i < selfPlayClients.length; i++) {
-            selfPlayClients[i].gameStep();
+            if (null == selfPlayStepResults) {
+                selfPlayClients[i].gameStep();
+            } else {
+                selfPlayStepResults.get(i).get();
+            }
             rs[i*2] = selfPlayClients[i].getResponse(0);
             rs[i*2+1] = selfPlayClients[i].getResponse(1);
             envSteps[i*2] += 1;
@@ -203,9 +222,27 @@ public class JNIGridnetSharedMemVecClient {
     }
 
     public void getMasks(final int player) throws Exception {
+        List<Future<Boolean>> selfPlayMaskResults = null;
+        if (pool != null) {
+            final List<Callable<Boolean>> selfPlayMaskRequests = new ArrayList<>();
+            for (int i = 0; i < selfPlayClients.length; i++) {
+                final int clientIndex = i;
+                selfPlayMaskRequests.add(() -> {
+                    selfPlayClients[clientIndex].getMasks(0);
+                    selfPlayClients[clientIndex].getMasks(1);
+                    return true;
+                });
+            }
+            selfPlayMaskResults = pool.invokeAll(selfPlayMaskRequests);
+        }
+
         for (int i = 0; i < selfPlayClients.length; i++) {
-            selfPlayClients[i].getMasks(0);
-            selfPlayClients[i].getMasks(1);
+            if (null == selfPlayMaskResults) {
+                selfPlayClients[i].getMasks(0);
+                selfPlayClients[i].getMasks(1);
+            } else {
+                selfPlayMaskResults.get(i).get();
+            }
         }
 
         List<Future<Boolean>> maskResults = null;
