@@ -819,23 +819,27 @@ public class GameState {
     }
 
      /*
-    | Observation Features | Planes | Description                                             |
-    |----------------------|--------|---------------------------------------------------------|
-    | Hit Points           | 5      | 0,1,2,3,>=4                                             |
-    | Resources            | 5      | 0,1,2,3,>=4                                             |
-    | Owner                | 3      | player 1,-, player 2                                    |
-    | Unit Types           | 8      | -, resource, base, barrack,worker, light, heavy, ranged |
-    | Current Action       | 6      | -, move, harvest, return, produce, attack               |
+    | Observation Features | Planes | Description                                              |
+    |----------------------|--------|----------------------------------------------------------|
+    | Hit Points           | 5      | 0,1,2,3,>=4                                              |
+    | Resources            | 5      | 0,1,2,3,>=4                                              |
+    | Owner                | 3      | -, player 1, player 2                                    |
+    | Unit Types           | 8      | -, resource, base, barrack, worker, light, heavy, ranged |
+    | Current Action       | 6      | -, move, harvest, return, produce, attack                |
     */
     public void getBufferObservation(int player, int clientIndex, NDBuffer buffer) {
         buffer.resetSegment(new int[]{clientIndex});
 
         for (int i = 0; i < pgs.units.size(); i++) {
-            Unit u = pgs.units.get(i);
-            UnitActionAssignment uaa = unitActions.get(u);
-            buffer.set(new int[]{clientIndex, u.getY(), u.getX(), 0+Math.min(u.getHitPoints(), 5)}, 1);
-            buffer.set(new int[]{clientIndex, u.getY(), u.getX(), 5+Math.min(u.getHitPoints(), 5)}, 1);
-            buffer.set(new int[]{clientIndex, u.getY(), u.getX(), 10+((u.getPlayer()+player)%2)  }, 1);
+            final Unit u = pgs.units.get(i);
+            final UnitActionAssignment uaa = unitActions.get(u);
+            final int unitActionType = (null == uaa) ? UnitAction.TYPE_NONE : uaa.action.type;
+
+            buffer.set(new int[]{clientIndex, u.getY(), u.getX(), 0+Math.min(u.getHitPoints(), 4)}, 1);
+            buffer.set(new int[]{clientIndex, u.getY(), u.getX(), 5+Math.min(u.getResources(), 4)}, 1);
+            buffer.set(new int[]{clientIndex, u.getY(), u.getX(), 10+1+((u.getPlayer()+player)%2)}, 1);
+            buffer.set(new int[]{clientIndex, u.getY(), u.getX(), 13+1+u.getType().ID            }, 1);
+            buffer.set(new int[]{clientIndex, u.getY(), u.getX(), 21+unitActionType              }, 1);
         }
     }
 
