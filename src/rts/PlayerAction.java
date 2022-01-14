@@ -12,6 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 import org.jdom.Element;
 import rts.units.UnitTypeTable;
+import util.NDBuffer;
 import util.Pair;
 import util.XMLWriter;
 
@@ -426,6 +427,52 @@ public class PlayerAction {
             }
         }
         return pa;
+    }
+
+    public static Pair<PlayerAction, InvalidPlayerActionStats> fromActionBuffer(
+            int clientOffset, NDBuffer actions, GameState gs, UnitTypeTable utt, int currentPlayer, int maxAttackRadius) {
+        final PlayerAction pa = new PlayerAction();
+        // calculating the resource usage of existing actions
+        final ResourceUsage base_ru = new ResourceUsage();
+		for (final Unit u : gs.getPhysicalGameState().getUnits()) {
+			final UnitActionAssignment uaa = gs.unitActions.get(u);
+			if (uaa != null) {
+				final ResourceUsage ru = uaa.action.resourceUsage(u, gs.getPhysicalGameState());
+				base_ru.merge(ru);
+			}
+        }
+        pa.setResourceUsage(base_ru);
+
+        final InvalidPlayerActionStats ipas = new InvalidPlayerActionStats();
+        final int[] action = new int[actions.size(2)];
+
+        for(int i=0; i<actions.size(1); i++) {
+            actions.getSegment(new int[]{clientOffset, i}, action);
+            final Unit u = gs.pgs.getUnitAt(i % gs.pgs.width, i / gs.pgs.width);
+            UnitActionAssignment uaa = gs.unitActions.get(u);
+            if (u == null) {
+                ipas.numInvalidActionNull += 1;
+            } else {
+                if (u.getPlayer() != currentPlayer) {
+                    ipas.numInvalidActionOwnership += 1;
+                }
+            }
+
+            if (u != null && u.getPlayer() == currentPlayer && uaa == null) {
+                UnitAction ua = UnitAction.fromActionArrayWithOffset(action, utt, gs, u, maxAttackRadius, 0);
+                // execute the action if the following happens
+                // 1. The selected unit is *not* null.
+                // 2. The unit selected is owned by the current player
+                // 3. The unit is not currently busy (its unit action is null)
+                // int id = (int) u.getID();
+                if (ua.resourceUsage(u, gs.pgs).consistentWith(pa.getResourceUsage(), gs)) {
+                    ResourceUsage ru = ua.resourceUsage(u, gs.pgs);
+                    pa.getResourceUsage().merge(ru);
+                    pa.addUnitAction(u, ua);
+                }
+            }
+        }
+        return new Pair<>(pa, ipas);
     }
 
 
