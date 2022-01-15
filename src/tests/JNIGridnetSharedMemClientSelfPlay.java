@@ -185,7 +185,7 @@ public class JNIGridnetSharedMemClientSelfPlay {
                 dones[i][j] = false;
             }
 
-            playergs[i].getBufferObserfation(i, clientOffset+i, obsBuffer);
+            playergs[i].getBufferObservation(i, clientOffset+i, obsBuffer);
 
             response[i].set(
                 null,
