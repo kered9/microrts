@@ -46,23 +46,21 @@ public class JNIGridnetSharedMemClientSelfPlay {
 
 
     // Settings
-    public RewardFunctionInterface[] rfs;
-    String micrortsPath;
+    public final RewardFunctionInterface[] rfs;
+    final String micrortsPath;
     String mapPath;
-    public AI ai2;
-    UnitTypeTable utt;
+    final UnitTypeTable utt;
     boolean partialObs = false;
 
     // Internal State
     PhysicalGameStateJFrame w;
-    public JNIAI[] ais = new JNIAI[2];
+    public final JNIAI[] ais = new JNIAI[2];
     PhysicalGameState pgs;
     GameState gs;
-    GameState[] playergs = new GameState[2];
-    boolean layerJSON = true;
-    public int renderTheme = PhysicalGameStatePanel.COLORSCHEME_WHITE;
-    public int maxAttackRadius;
-    public int numPlayers = 2;
+    final GameState[] playergs = new GameState[2];
+    public final int renderTheme = PhysicalGameStatePanel.COLORSCHEME_WHITE;
+    public final int maxAttackRadius;
+    public final int numPlayers = 2;
 
     final int clientOffset;
 
@@ -89,7 +87,7 @@ public class JNIGridnetSharedMemClientSelfPlay {
         partialObs = partial_obs;
         maxAttackRadius = utt.getMaxAttackRange() * 2 + 1;
         if (micrortsPath.length() != 0) {
-            this.mapPath = Paths.get(micrortsPath, mapPath).toString();
+            mapPath = Paths.get(micrortsPath, mapPath).toString();
         }
 
         pgs = PhysicalGameState.load(mapPath, utt);
@@ -104,7 +102,7 @@ public class JNIGridnetSharedMemClientSelfPlay {
     }
 
     public byte[] render(boolean returnPixels) throws Exception {
-        if (w==null) {
+        if (w == null) {
             w = PhysicalGameStatePanel.newVisualizer(gs, 640, 640, partialObs, null, renderTheme);
         }
         w.setStateCloning(gs);
