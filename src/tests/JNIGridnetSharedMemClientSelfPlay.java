@@ -132,6 +132,9 @@ public class JNIGridnetSharedMemClientSelfPlay {
             te.addPlayerAction(pas[i].clone());
         }
 
+        // simulate:
+        gs.cycle();
+
         for (int i = 0; i < numPlayers; i++) {
             for (int j = 0; j < rfs.length; j++) {
                 rfs[j].computeReward(i, 1 - i, te, gs);
@@ -182,7 +185,7 @@ public class JNIGridnetSharedMemClientSelfPlay {
                 dones[i][j] = false;
             }
 
-            playergs[i].getBufferObservation(i, clientOffset+i, obsBuffer);
+            playergs[i].getBufferObserfation(i, clientOffset+i, obsBuffer);
 
             response[i].set(
                 null,
