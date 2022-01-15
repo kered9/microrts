@@ -59,7 +59,6 @@ public class JNIGridnetSharedMemClientSelfPlay {
     PhysicalGameState pgs;
     GameState gs;
     GameState[] playergs = new GameState[2];
-    boolean gameover = false;
     boolean layerJSON = true;
     public int renderTheme = PhysicalGameStatePanel.COLORSCHEME_WHITE;
     public int maxAttackRadius;
@@ -133,12 +132,6 @@ public class JNIGridnetSharedMemClientSelfPlay {
             pas[i] = ais[i].getActionFromBuffer(i, playergs[i], clientOffset+i, actionBuffer);
             gs.issueSafe(pas[i]);
             te.addPlayerAction(pas[i].clone());
-        }
-        // simulate:
-        gameover = gs.cycle();
-        if (gameover) {
-            // ai1.gameOver(gs.winner());
-            // ai2.gameOver(gs.winner());
         }
 
         for (int i = 0; i < numPlayers; i++) {
