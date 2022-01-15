@@ -58,6 +58,7 @@ public class JNIGridnetSharedMemVecClient {
     public final int maxSteps;
     public final int[] envSteps; 
     public final RewardFunctionInterface[] rfs;
+    final int numRfs;
     public final UnitTypeTable utt;
     public final boolean partialObs;
     public final String mapPath;
@@ -70,6 +71,8 @@ public class JNIGridnetSharedMemVecClient {
     final boolean[][] done;
     final Response[] rs;
     final Responses responses;
+    final double[][] terminalReward;
+    final boolean[][] terminalDone;
 
     final ExecutorService pool;
 
@@ -80,6 +83,7 @@ public class JNIGridnetSharedMemVecClient {
         maxSteps = a_max_steps;
         utt = a_utt;
         rfs = a_rfs;
+        numRfs = a_rfs.length;
         partialObs = partial_obs;
 
         this.mapPath = Paths.get(a_micrortsPath, mapPath).toString();
@@ -111,10 +115,12 @@ public class JNIGridnetSharedMemVecClient {
         }
 
         // initialize storage
-        reward = new double[s1][rfs.length];
-        done = new boolean[s1][rfs.length];
+        reward = new double[s1][numRfs];
+        done = new boolean[s1][numRfs];
         responses = new Responses(null, null, null);
         rs = new Response[s1];
+        terminalReward = new double[2][numRfs];
+        terminalDone = new boolean[2][numRfs];
 
         if (threadPoolSize > 0) {
             pool = Executors.newFixedThreadPool(threadPoolSize);
@@ -168,9 +174,22 @@ public class JNIGridnetSharedMemVecClient {
             envSteps[i*2] += 1;
             envSteps[i*2+1] += 1;
             if (rs[i*2].done[0] || envSteps[i*2] >= maxSteps) {
+                // stash previous values
+                System.arraycopy(rs[i*2].reward, 0, terminalReward[0], 0, numRfs);
+                System.arraycopy(rs[i*2].done, 0, terminalDone[0], 0, numRfs);
+                System.arraycopy(rs[i*2+1].reward, 0, terminalReward[1], 0, numRfs);
+                System.arraycopy(rs[i*2+1].done, 0, terminalDone[1], 0, numRfs);
+
                 selfPlayClients[i].reset();
+
+                // restore previosly stashed values
+                System.arraycopy(terminalReward[0], 0, rs[i*2].reward, 0, numRfs);
+                System.arraycopy(terminalDone[0], 0, rs[i*2].done, 0, numRfs);
+                System.arraycopy(terminalReward[1], 0, rs[i*2+1].reward, 0, numRfs);
+                System.arraycopy(terminalDone[1], 0, rs[i*2+1].done, 0, numRfs);
                 rs[i*2].done[0] = true;
                 rs[i*2+1].done[0] = true;
+
                 envSteps[i*2] =0;
                 envSteps[i*2+1] =0;
             }
@@ -206,8 +225,17 @@ public class JNIGridnetSharedMemVecClient {
                 rs[i] = stepResults.get(i-selfPlayClients.length*2).get();
             }
             if (rs[i].done[0] || envSteps[i] >= maxSteps) {
+                // stash previous values
+                System.arraycopy(rs[i].reward, 0, terminalReward[0], 0, numRfs);
+                System.arraycopy(rs[i].done, 0, terminalDone[0], 0, numRfs);
+
                 clients[i-selfPlayClients.length*2].reset(players[i]);
+
+                // restore previosly stashed values
+                System.arraycopy(terminalReward[0], 0, rs[i].reward, 0, numRfs);
+                System.arraycopy(terminalDone[0], 0, rs[i].done, 0, numRfs);
                 rs[i].done[0] = true;
+
                 envSteps[i] = 0;
             }
         }
