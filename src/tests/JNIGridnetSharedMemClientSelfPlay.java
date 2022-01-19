@@ -132,6 +132,9 @@ public class JNIGridnetSharedMemClientSelfPlay {
             te.addPlayerAction(pas[i].clone());
         }
 
+        // simulate:
+        gs.cycle();
+
         for (int i = 0; i < numPlayers; i++) {
             for (int j = 0; j < rfs.length; j++) {
                 rfs[j].computeReward(i, 1 - i, te, gs);
