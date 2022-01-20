@@ -61,9 +61,9 @@ public class JNIGridnetClient {
     public boolean partialObs = false;
 
     // Internal State
-    PhysicalGameState pgs;
-    GameState gs;
-    GameState player1gs, player2gs;
+    public PhysicalGameState pgs;
+    public GameState gs;
+    public GameState player1gs, player2gs;
     boolean gameover = false;
     boolean layerJSON = true;
     public int renderTheme = PhysicalGameStatePanel.COLORSCHEME_WHITE;
