@@ -67,9 +67,9 @@ public class JNIGridnetClientSelfPlay {
     // Internal State
     PhysicalGameStateJFrame w;
     public JNIInterface[] ais = new JNIInterface[2];
-    PhysicalGameState pgs;
-    GameState gs;
-    GameState[] playergs = new GameState[2];
+    public PhysicalGameState pgs;
+    public GameState gs;
+    public GameState[] playergs = new GameState[2];
     boolean gameover = false;
     boolean layerJSON = true;
     public int renderTheme = PhysicalGameStatePanel.COLORSCHEME_WHITE;

@@ -54,9 +54,9 @@ public class JNIGridnetSharedMemClient {
     public boolean partialObs = false;
 
     // Internal State
-    PhysicalGameState pgs;
-    GameState gs;
-    GameState player1gs, player2gs;
+    public PhysicalGameState pgs;
+    public GameState gs;
+    public GameState player1gs, player2gs;
     boolean gameover = false;
     boolean layerJSON = true;
     public int renderTheme = PhysicalGameStatePanel.COLORSCHEME_WHITE;
@@ -84,9 +84,9 @@ public class JNIGridnetSharedMemClient {
         this.actionBuffer = actionBuffer;
         this.mapPath = mapPath;
         partialObs = partial_obs;
-        
         rfs = a_rfs;
         utt = a_utt;
+        maxAttackRadius = utt.getMaxAttackRange() * 2 + 1;
         pgs = PhysicalGameState.load(mapPath, utt);
         ai1 = new JNIAI(100, 0, utt);
         ai2 = a_ai2;
