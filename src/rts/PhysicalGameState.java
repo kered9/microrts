@@ -326,10 +326,21 @@ public class PhysicalGameState {
      * @return
      */
     public Collection<Unit> getUnitsAround(int x, int y, int width, int height) {
-        List<Unit> closeUnits = new LinkedList<Unit>();
-        for (Unit u : units) {
-            if ((Math.abs(u.getX() - x) <= width && Math.abs(u.getY() - y) <= height)) {
-                closeUnits.add(u);
+        final List<Unit> closeUnits = new LinkedList<Unit>();
+        if (unitPositionCacheReady) {
+            for (int dx=x-width; dx<=x+width; dx++) {
+                for (int dy=y-height; dy<=y+height; dy++) {
+                    final Unit u = getUnitAt(dx, dy);
+                    if (null != u) {
+                        closeUnits.add(u);
+                    }
+                }
+            }
+        } else {
+            for (Unit u : units) {
+                if ((Math.abs(u.getX() - x) <= width && Math.abs(u.getY() - y) <= height)) {
+                    closeUnits.add(u);
+                }
             }
         }
         return closeUnits;

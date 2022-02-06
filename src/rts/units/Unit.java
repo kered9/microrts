@@ -352,9 +352,9 @@ public class Unit implements Serializable {
                 if (y<pgs.getHeight()-1 && udown!=null && udown.player!=player && udown.player>=0) l.add(new UnitAction(UnitAction.TYPE_ATTACK_LOCATION,udown.x,udown.y));
                 if (x>0 && uleft!=null && uleft.player!=player && uleft.player>=0) l.add(new UnitAction(UnitAction.TYPE_ATTACK_LOCATION,uleft.x,uleft.y));                
             } else {
-                int sqrange = type.attackRange*type.attackRange;
-                // xxx(okachaaiev): this should be replaced as well
-                for(Unit u:pgs.getUnits()) {
+                final int sqrange = type.attackRange*type.attackRange;
+                // units outside the square won't make it into the circle
+                for(Unit u: pgs.getUnitsAround(x, y, type.attackRange)) {
                     if (u.player<0 || u.player==player) continue;
                     int sq_dx = (u.x - x)*(u.x - x);
                     int sq_dy = (u.y - y)*(u.y - y);
