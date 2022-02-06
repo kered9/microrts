@@ -337,7 +337,7 @@ public class Unit implements Serializable {
 
         PhysicalGameState pgs = s.getPhysicalGameState();
         Player p = pgs.getPlayer(player);
-        
+
         // retrieves units around me
         final Unit uup = pgs.getUnitAt(x,y-1);
         final Unit uright = pgs.getUnitAt(x+1,y);
@@ -353,6 +353,7 @@ public class Unit implements Serializable {
                 if (x>0 && uleft!=null && uleft.player!=player && uleft.player>=0) l.add(new UnitAction(UnitAction.TYPE_ATTACK_LOCATION,uleft.x,uleft.y));                
             } else {
                 int sqrange = type.attackRange*type.attackRange;
+                // xxx(okachaaiev): this should be replaced as well
                 for(Unit u:pgs.getUnits()) {
                     if (u.player<0 || u.player==player) continue;
                     int sq_dx = (u.x - x)*(u.x - x);
@@ -392,10 +393,10 @@ public class Unit implements Serializable {
                 int tdown = (y<pgs.getHeight()-1 ? pgs.getTerrain(x, y+1):PhysicalGameState.TERRAIN_WALL);
                 int tleft = (x>0 ? pgs.getTerrain(x-1, y):PhysicalGameState.TERRAIN_WALL);
 
-                if (tup==PhysicalGameState.TERRAIN_NONE && pgs.getUnitAt(x,y-1) == null) l.add(new UnitAction(UnitAction.TYPE_PRODUCE,UnitAction.DIRECTION_UP,ut));
-                if (tright==PhysicalGameState.TERRAIN_NONE && pgs.getUnitAt(x+1,y) == null) l.add(new UnitAction(UnitAction.TYPE_PRODUCE,UnitAction.DIRECTION_RIGHT,ut));
-                if (tdown==PhysicalGameState.TERRAIN_NONE && pgs.getUnitAt(x,y+1) == null) l.add(new UnitAction(UnitAction.TYPE_PRODUCE,UnitAction.DIRECTION_DOWN,ut));
-                if (tleft==PhysicalGameState.TERRAIN_NONE && pgs.getUnitAt(x-1,y) == null) l.add(new UnitAction(UnitAction.TYPE_PRODUCE,UnitAction.DIRECTION_LEFT,ut));
+                if (tup==PhysicalGameState.TERRAIN_NONE && uup == null) l.add(new UnitAction(UnitAction.TYPE_PRODUCE,UnitAction.DIRECTION_UP,ut));
+                if (tright==PhysicalGameState.TERRAIN_NONE && uright == null) l.add(new UnitAction(UnitAction.TYPE_PRODUCE,UnitAction.DIRECTION_RIGHT,ut));
+                if (tdown==PhysicalGameState.TERRAIN_NONE && udown == null) l.add(new UnitAction(UnitAction.TYPE_PRODUCE,UnitAction.DIRECTION_DOWN,ut));
+                if (tleft==PhysicalGameState.TERRAIN_NONE && uleft == null) l.add(new UnitAction(UnitAction.TYPE_PRODUCE,UnitAction.DIRECTION_LEFT,ut));
             }
         }
         
