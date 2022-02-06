@@ -327,7 +327,7 @@ public class PhysicalGameState {
      */
     public Collection<Unit> getUnitsAround(int x, int y, int width, int height) {
         final List<Unit> closeUnits = new LinkedList<Unit>();
-        if (unitPositionCacheReady) {
+        if (unitPositionCacheReady && getUnits().size() > width*height) {
             for (int dx=x-width; dx<=x+width; dx++) {
                 for (int dy=y-height; dy<=y+height; dy++) {
                     final Unit u = getUnitAt(dx, dy);
