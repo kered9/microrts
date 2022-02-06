@@ -337,34 +337,13 @@ public class Unit implements Serializable {
 
         PhysicalGameState pgs = s.getPhysicalGameState();
         Player p = pgs.getPlayer(player);
-
-        /*
-        Unit uup = pgs.getUnitAt(x,y-1);
-        Unit uright = pgs.getUnitAt(x+1,y);
-        Unit udown = pgs.getUnitAt(x,y+1);
-        Unit uleft = pgs.getUnitAt(x-1,y);
-        */
         
         // retrieves units around me
-        Unit uup = null, uright = null, udown = null, uleft = null;
-		for (Unit u : pgs.getUnits()) {
-			if (u.x == x) {
-				if (u.y == y - 1) {
-					uup = u;
-				} else if (u.y == y + 1) {
-					udown = u;
-				}
-			} else {
-				if (u.y == y) {
-					if (u.x == x - 1) {
-						uleft = u;
-					} else if (u.x == x + 1) {
-						uright = u;
-					}
-				}
-			}
-		}
-        
+        final Unit uup = pgs.getUnitAt(x,y-1);
+        final Unit uright = pgs.getUnitAt(x+1,y);
+        final Unit udown = pgs.getUnitAt(x,y+1);
+        final Unit uleft = pgs.getUnitAt(x-1,y);
+
 		// if this unit can attack, adds an attack action for each unit around it
         if (type.canAttack) {
             if (type.attackRange==1) {
