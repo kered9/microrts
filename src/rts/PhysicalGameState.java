@@ -288,6 +288,9 @@ public class PhysicalGameState {
      */
     public Unit getUnitAt(int x, int y) {
         if (unitPositionCacheReady) {
+            if (x < 0 || y < 0 || x >= width || y >= height) {
+                return null;
+            }
             int index = unitPositionCache[y*width+x];
             return (EMPTY_CELL == index) ? null : getUnits().get(index);
         } else {
