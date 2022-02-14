@@ -531,7 +531,7 @@ public class GameState {
      * @return whether the game was over
      */
     public boolean cycle() {
-        // lock positions cache to make sure that stale caache is
+        // lock positions cache to make sure that stale cache is
         // not use during the update
         pgs.resetUnitPositions();
 
@@ -553,7 +553,7 @@ public class GameState {
         
         boolean go = gameover();
 
-        // recompute caache and let everyone else use it
+        // recompute cache and let everyone else use it
         pgs.computeUnitPositions();
 
         return go;
