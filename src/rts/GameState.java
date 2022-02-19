@@ -685,14 +685,14 @@ public class GameState {
      * @return
      */
     public boolean integrityCheck() {
-        List<Unit> alreadyUsed = new LinkedList<Unit>();
-        for(UnitActionAssignment uaa:unitActions.values()) {
-            Unit u = uaa.unit;
+        final Set<Unit> alreadyUsed = new HashSet<Unit>(pgs.getUnits().size());
+        for(UnitActionAssignment uaa: unitActions.values()) {
+            final Unit u = uaa.unit;
             int idx = pgs.getUnits().indexOf(u);
             if (idx==-1) {
                 System.err.println("integrityCheck: unit does not exist!");
                 return false;
-            }            
+            }
             if (alreadyUsed.contains(u)) {
                 System.err.println("integrityCheck: two actions to the same unit!");
                 return false;
