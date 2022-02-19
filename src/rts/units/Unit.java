@@ -338,33 +338,12 @@ public class Unit implements Serializable {
         PhysicalGameState pgs = s.getPhysicalGameState();
         Player p = pgs.getPlayer(player);
 
-        /*
-        Unit uup = pgs.getUnitAt(x,y-1);
-        Unit uright = pgs.getUnitAt(x+1,y);
-        Unit udown = pgs.getUnitAt(x,y+1);
-        Unit uleft = pgs.getUnitAt(x-1,y);
-        */
-        
         // retrieves units around me
-        Unit uup = null, uright = null, udown = null, uleft = null;
-		for (Unit u : pgs.getUnits()) {
-			if (u.x == x) {
-				if (u.y == y - 1) {
-					uup = u;
-				} else if (u.y == y + 1) {
-					udown = u;
-				}
-			} else {
-				if (u.y == y) {
-					if (u.x == x - 1) {
-						uleft = u;
-					} else if (u.x == x + 1) {
-						uright = u;
-					}
-				}
-			}
-		}
-        
+        final Unit uup = pgs.getUnitAt(x,y-1);
+        final Unit uright = pgs.getUnitAt(x+1,y);
+        final Unit udown = pgs.getUnitAt(x,y+1);
+        final Unit uleft = pgs.getUnitAt(x-1,y);
+
 		// if this unit can attack, adds an attack action for each unit around it
         if (type.canAttack) {
             if (type.attackRange==1) {
@@ -373,8 +352,9 @@ public class Unit implements Serializable {
                 if (y<pgs.getHeight()-1 && udown!=null && udown.player!=player && udown.player>=0) l.add(new UnitAction(UnitAction.TYPE_ATTACK_LOCATION,udown.x,udown.y));
                 if (x>0 && uleft!=null && uleft.player!=player && uleft.player>=0) l.add(new UnitAction(UnitAction.TYPE_ATTACK_LOCATION,uleft.x,uleft.y));                
             } else {
-                int sqrange = type.attackRange*type.attackRange;
-                for(Unit u:pgs.getUnits()) {
+                final int sqrange = type.attackRange*type.attackRange;
+                // units outside the square won't make it into the circle
+                for(Unit u: pgs.getUnitsAround(x, y, type.attackRange)) {
                     if (u.player<0 || u.player==player) continue;
                     int sq_dx = (u.x - x)*(u.x - x);
                     int sq_dy = (u.y - y)*(u.y - y);
@@ -413,10 +393,10 @@ public class Unit implements Serializable {
                 int tdown = (y<pgs.getHeight()-1 ? pgs.getTerrain(x, y+1):PhysicalGameState.TERRAIN_WALL);
                 int tleft = (x>0 ? pgs.getTerrain(x-1, y):PhysicalGameState.TERRAIN_WALL);
 
-                if (tup==PhysicalGameState.TERRAIN_NONE && pgs.getUnitAt(x,y-1) == null) l.add(new UnitAction(UnitAction.TYPE_PRODUCE,UnitAction.DIRECTION_UP,ut));
-                if (tright==PhysicalGameState.TERRAIN_NONE && pgs.getUnitAt(x+1,y) == null) l.add(new UnitAction(UnitAction.TYPE_PRODUCE,UnitAction.DIRECTION_RIGHT,ut));
-                if (tdown==PhysicalGameState.TERRAIN_NONE && pgs.getUnitAt(x,y+1) == null) l.add(new UnitAction(UnitAction.TYPE_PRODUCE,UnitAction.DIRECTION_DOWN,ut));
-                if (tleft==PhysicalGameState.TERRAIN_NONE && pgs.getUnitAt(x-1,y) == null) l.add(new UnitAction(UnitAction.TYPE_PRODUCE,UnitAction.DIRECTION_LEFT,ut));
+                if (tup==PhysicalGameState.TERRAIN_NONE && uup == null) l.add(new UnitAction(UnitAction.TYPE_PRODUCE,UnitAction.DIRECTION_UP,ut));
+                if (tright==PhysicalGameState.TERRAIN_NONE && uright == null) l.add(new UnitAction(UnitAction.TYPE_PRODUCE,UnitAction.DIRECTION_RIGHT,ut));
+                if (tdown==PhysicalGameState.TERRAIN_NONE && udown == null) l.add(new UnitAction(UnitAction.TYPE_PRODUCE,UnitAction.DIRECTION_DOWN,ut));
+                if (tleft==PhysicalGameState.TERRAIN_NONE && uleft == null) l.add(new UnitAction(UnitAction.TYPE_PRODUCE,UnitAction.DIRECTION_LEFT,ut));
             }
         }
         

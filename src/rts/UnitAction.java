@@ -534,6 +534,7 @@ public class UnitAction {
     }
 
     public static int[] getValidActionArray(List<UnitAction> uas, GameState gs, UnitTypeTable utt) {
+        int numUnits = utt.getUnitTypes().size();
         int[] validAction = new int[6+4+4+4+4+utt.getUnitTypes().size()+gs.pgs.width*gs.pgs.height];
         for (UnitAction ua:uas) {
             validAction[ua.type] = 1;
@@ -559,7 +560,7 @@ public class UnitAction {
                     break;
                 }
                 case TYPE_ATTACK_LOCATION: {
-                    validAction[6+4+4+4+4+utt.getUnitTypes().size()+ua.y*gs.pgs.width+ua.x] = 1;
+                    validAction[6+4+4+4+4+numUnits+ua.y*gs.pgs.width+ua.x] = 1;
                     break;
                 }
             }
@@ -568,8 +569,9 @@ public class UnitAction {
     }
 
     public static void getValidActionArray(Unit u, GameState gs, UnitTypeTable utt, int[] mask, int maxAttackRange, int idxOffset) {
-        List<UnitAction> uas = u.getUnitActions(gs);
+        final List<UnitAction> uas = u.getUnitActions(gs);
         int centerCoordinate = maxAttackRange / 2;
+        int numUnits = utt.getUnitTypes().size();
         for (UnitAction ua:uas) {
             mask[idxOffset+ua.type] = 1;
             switch (ua.type) {
@@ -596,7 +598,7 @@ public class UnitAction {
                 case TYPE_ATTACK_LOCATION: {
                     int relative_x = ua.x - u.getX();
                     int relative_y = ua.y - u.getY();
-                    mask[idxOffset+6+4+4+4+4+utt.getUnitTypes().size()+(centerCoordinate+relative_y)*maxAttackRange+(centerCoordinate+relative_x)] = 1;
+                    mask[idxOffset+6+4+4+4+4+numUnits+(centerCoordinate+relative_y)*maxAttackRange+(centerCoordinate+relative_x)] = 1;
                     break;
                 }
             }
@@ -604,9 +606,10 @@ public class UnitAction {
     }
 
     public static void getValidActionBuffer(Unit u, GameState gs, UnitTypeTable utt, NDBuffer mask, int maxAttackRange, int[] idxOffset) {
-        List<UnitAction> uas = u.getUnitActions(gs);
+        final List<UnitAction> uas = u.getUnitActions(gs);
         int centerCoordinate = maxAttackRange / 2;
-        for (UnitAction ua:uas) {
+        int numUnits = utt.getUnitTypes().size();
+        for (UnitAction ua: uas) {
             mask.set(idxOffset, ua.type, 1);
             switch (ua.type) {
                 case TYPE_NONE: {
@@ -632,7 +635,7 @@ public class UnitAction {
                 case TYPE_ATTACK_LOCATION: {
                     int relative_x = ua.x - u.getX();
                     int relative_y = ua.y - u.getY();
-                    mask.set(idxOffset, 6+4+4+4+4+utt.getUnitTypes().size()+(centerCoordinate+relative_y)*maxAttackRange+(centerCoordinate+relative_x), 1);
+                    mask.set(idxOffset, 6+4+4+4+4+numUnits+(centerCoordinate+relative_y)*maxAttackRange+(centerCoordinate+relative_x), 1);
                     break;
                 }
             }

@@ -155,9 +155,8 @@ public class JNIGridnetSharedMemClientSelfPlay {
     public void getMasks(int player) throws Exception {
         actionMaskBuffer.resetSegment(new int[]{clientOffset+player});
 
-        for (int i = 0; i < pgs.getUnits().size(); i++) {
-            Unit u = pgs.getUnits().get(i);
-            UnitActionAssignment uaa = gs.getUnitActions().get(u);
+        for (Unit u: pgs.getUnits()) {
+            final UnitActionAssignment uaa = gs.getActionAssignment(u);
             if (u.getPlayer() == player && uaa == null) {
                 final int[] idxOffset = new int[]{clientOffset+player, u.getY(), u.getX()};
                 UnitAction.getValidActionBuffer(u, gs, utt, actionMaskBuffer, maxAttackRadius, idxOffset);

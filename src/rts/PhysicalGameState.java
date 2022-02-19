@@ -45,6 +45,8 @@ public class PhysicalGameState {
      */
     public static final int TERRAIN_WALL = 1;
 
+    public static final int EMPTY_CELL = -1;
+
     int width = 8;
     int height = 8;
     int terrain[] = null;
@@ -60,6 +62,12 @@ public class PhysicalGameState {
      * Matrix shapes
      */
     int[] hitpointsShape;
+
+    /**
+     * Mapping from unit position to unit index
+     */
+    public int[] unitPositionCache;
+    public boolean unitPositionCacheReady = false;
 
     /**
      * Constructs the game state map from a XML
@@ -110,6 +118,7 @@ public class PhysicalGameState {
         height = a_height;
         terrain = t;
         hitpointsShape = new int[]{width, height, 2};
+        unitPositionCache = new int[height*width];
     }
 
     /**
@@ -258,22 +267,42 @@ public class PhysicalGameState {
         return null;
     }
 
+    public void resetUnitPositions() {
+        Arrays.fill(unitPositionCache, EMPTY_CELL);
+        unitPositionCacheReady = false;
+    }
+
+    public void computeUnitPositions() {
+        for (int i=0; i<getUnits().size(); i++) {
+            final Unit u = getUnits().get(i);
+            unitPositionCache[u.getY()*width+u.getX()] = i;
+        }
+        unitPositionCacheReady = true;
+    }
+
     /**
-     * Returns the {@link Unit} at a given coordinate or null if no unit is
-     * present
-     *
-     * @param x
-     * @param y
-     * @return
+     * If the cache is available, the call uses cache of pos -> unit id
+     * rather than scanning over all existing units on the board. If cache
+     * is "loccked", fallsback to existing method. The cache is locked
+     * for the duration of game a cycle.
      */
     public Unit getUnitAt(int x, int y) {
-        for (Unit u : units) {
-            if (u.getX() == x && u.getY() == y) {
-                return u;
+        if (unitPositionCacheReady) {
+            if (x < 0 || y < 0 || x >= width || y >= height) {
+                return null;
             }
+            int index = unitPositionCache[y*width+x];
+            return (EMPTY_CELL == index) ? null : getUnits().get(index);
+        } else {
+            for (Unit u : units) {
+                if (u.getX() == x && u.getY() == y) {
+                    return u;
+                }
+            }
+            return null;
         }
-        return null;
     }
+
 
     /**
      * Returns the units within a squared area
@@ -297,10 +326,21 @@ public class PhysicalGameState {
      * @return
      */
     public Collection<Unit> getUnitsAround(int x, int y, int width, int height) {
-        List<Unit> closeUnits = new LinkedList<Unit>();
-        for (Unit u : units) {
-            if ((Math.abs(u.getX() - x) <= width && Math.abs(u.getY() - y) <= height)) {
-                closeUnits.add(u);
+        final List<Unit> closeUnits = new LinkedList<Unit>();
+        if (unitPositionCacheReady && getUnits().size() > width*height) {
+            for (int dx=x-width; dx<=x+width; dx++) {
+                for (int dy=y-height; dy<=y+height; dy++) {
+                    final Unit u = getUnitAt(dx, dy);
+                    if (null != u) {
+                        closeUnits.add(u);
+                    }
+                }
+            }
+        } else {
+            for (Unit u : units) {
+                if ((Math.abs(u.getX() - x) <= width && Math.abs(u.getY() - y) <= height)) {
+                    closeUnits.add(u);
+                }
             }
         }
         return closeUnits;

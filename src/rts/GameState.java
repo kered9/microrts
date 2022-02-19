@@ -30,7 +30,6 @@ public class GameState {
     protected UnitTypeTable utt = null;
 
     protected int [][][][] matrixObservation;
-    protected int[] unitPositionCache;
     public static final int numFeatureMaps = 5;
     public static final int numFeaturePlanes = 27;
 
@@ -532,6 +531,10 @@ public class GameState {
      * @return whether the game was over
      */
     public boolean cycle() {
+        // lock positions cache to make sure that stale cache is
+        // not use during the update
+        pgs.resetUnitPositions();
+
         time++;
         
         List<UnitActionAssignment> readyToExecute = new LinkedList<UnitActionAssignment>();
@@ -548,7 +551,12 @@ public class GameState {
             uaa.action.execute(uaa.unit,this);
         }
         
-        return gameover();
+        boolean go = gameover();
+
+        // recompute cache and let everyone else use it
+        pgs.computeUnitPositions();
+
+        return go;
     }
     
     
@@ -829,17 +837,9 @@ public class GameState {
     | Current Action       | 6      | -, move, harvest, return, produce, attack                |
     */
     public void getBufferObservation(int player, int clientIndex, NDBuffer buffer) {
-        if (unitPositionCache == null) {
-            unitPositionCache = new int[pgs.height*pgs.width];
-        }
-
-        Arrays.fill(unitPositionCache, 0);
         buffer.resetSegment(new int[]{clientIndex});
 
         for (final Unit u: getUnits()) {
-            // mark existing unit
-            unitPositionCache[u.getY()*pgs.width+u.getX()] = 1;
-
             final UnitActionAssignment uaa = unitActions.get(u);
             final int playerOffset = (-1 == u.getPlayer()) ? 0 : 1+((u.getPlayer()+player)%2);
             final int unitActionType = (null == uaa) ? UnitAction.TYPE_NONE : uaa.action.type;
@@ -854,7 +854,7 @@ public class GameState {
         // scan over empty cells
         for (int y=0; y<pgs.getHeight(); y++) {
             for (int x=0; x<pgs.getWidth(); x++) {
-                if (0 == unitPositionCache[y*pgs.width+x]) {
+                if (PhysicalGameState.EMPTY_CELL == pgs.unitPositionCache[y*pgs.width+x]) {
                     buffer.set(new int[]{clientIndex, y, x, 0}, 1);
                     buffer.set(new int[]{clientIndex, y, x, 5}, 1);
                     buffer.set(new int[]{clientIndex, y, x, 10}, 1);
@@ -935,7 +935,7 @@ public class GameState {
             unitActionMatrix
         };
     }
-    
+
     /**
      * Constructs a GameState from XML
      * @param e
