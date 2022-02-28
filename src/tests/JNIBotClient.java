@@ -25,7 +25,6 @@ import ai.jni.Response;
 import gui.PhysicalGameStateJFrame;
 import gui.PhysicalGameStatePanel;
 import rts.GameState;
-import rts.PartiallyObservableGameState;
 import rts.PhysicalGameState;
 import rts.PlayerAction;
 import rts.Trace;
@@ -51,26 +50,22 @@ import weka.core.pmml.jaxbbindings.False;
  *         the same server.
  * 
  */
-public class JNIGridnetClient {
+public class JNIBotClient {
 
-    // Settings
-    public RewardFunctionInterface[] rfs;
-    String micrortsPath;
-    String mapPath;
+    PhysicalGameStateJFrame w;
+    public AI ai1;
     public AI ai2;
-    UnitTypeTable utt;
-    public boolean partialObs = false;
-
-    // Internal State
     PhysicalGameState pgs;
     GameState gs;
-    GameState player1gs, player2gs;
+    UnitTypeTable utt;
+    boolean partialObs;
+    public RewardFunctionInterface[] rfs;
+    String mapPath;
+    String micrortsPath;
     boolean gameover = false;
     boolean layerJSON = true;
     public int renderTheme = PhysicalGameStatePanel.COLORSCHEME_WHITE;
     public int maxAttackRadius;
-    PhysicalGameStateJFrame w;
-    public JNIInterface ai1;
 
     // storage
     int[][][] masks;
@@ -84,7 +79,7 @@ public class JNIGridnetClient {
     Spawner spawner;
     String mode;
 
-    public JNIGridnetClient(RewardFunctionInterface[] a_rfs, String a_micrortsPath, String a_mapPath, AI a_ai2,
+    public JNIBotClient(RewardFunctionInterface[] a_rfs, String a_micrortsPath, String a_mapPath, AI a_ai1, AI a_ai2,
             UnitTypeTable a_utt, boolean partial_obs) throws Exception {
         micrortsPath = a_micrortsPath;
         mapPath = a_mapPath;
@@ -92,10 +87,10 @@ public class JNIGridnetClient {
         utt = a_utt;
         partialObs = partial_obs;
         maxAttackRadius = utt.getMaxAttackRange() * 2 + 1;
-        ai1 = new JNIAI(100, 0, utt);
+        ai1 = a_ai1;
         ai2 = a_ai2;
-        if (ai2 == null) {
-            throw new Exception("no ai2 was chosen");
+        if (ai1 == null || ai2 == null) {
+            throw new Exception("no ai1 or ai2 was chosen");
         }
         if (micrortsPath.length() != 0) {
             this.mapPath = Paths.get(micrortsPath, mapPath).toString();
@@ -131,7 +126,7 @@ public class JNIGridnetClient {
 
     public byte[] render(boolean returnPixels) throws Exception {
         if (w == null) {
-            w = PhysicalGameStatePanel.newVisualizer(gs, 640, 640, partialObs, null, renderTheme);
+            w = PhysicalGameStatePanel.newVisualizer(gs, 640, 640, false, null, renderTheme);
         }
         w.setStateCloning(gs);
         w.repaint();
@@ -147,16 +142,10 @@ public class JNIGridnetClient {
         return data.getData();
     }
 
-    public Response gameStep(int[][] action, int player) throws Exception {
-        if (partialObs) {
-            player1gs = new PartiallyObservableGameState(gs, player);
-            player2gs = new PartiallyObservableGameState(gs, 1 - player);
-        } else {
-            player1gs = gs;
-            player2gs = gs;
-        }
-        pa1 = ai1.getAction(player, player1gs, action);
-        pa2 = ai2.getAction(1 - player, player2gs);
+    public Response gameStep(int player) throws Exception {
+        pa1 = ai1.getAction(player, gs);
+        pa2 = ai2.getAction(1 - player, gs);
+
         gs.issueSafe(pa1);
         gs.issueSafe(pa2);
         TraceEntry te = new TraceEntry(gs.getPhysicalGameState().clone(), gs.getTime());
@@ -166,7 +155,7 @@ public class JNIGridnetClient {
         // simulate:
         gameover = gs.cycle();
         if (gameover) {
-            // ai1.gameOver(gs.winner());
+            ai1.gameOver(gs.winner());
             ai2.gameOver(gs.winner());
         }
         for (int i = 0; i < rewards.length; i++) {
@@ -174,27 +163,8 @@ public class JNIGridnetClient {
             dones[i] = rfs[i].isDone();
             rewards[i] = rfs[i].getReward();
         }
-        response.set(ai1.getObservation(player, player1gs), rewards, dones, ai1.computeInfo(player, player2gs));
+        response.set(null, rewards, dones, "{}");
         return response;
-    }
-
-    public int[][][] getMasks(int player) throws Exception {
-        for (int i = 0; i < masks.length; i++) {
-            for (int j = 0; j < masks[0].length; j++) {
-                for (int k = 0; k < masks[0][0].length; k++) {
-                    masks[i][j][k] = 0;
-                }
-            }
-        }
-        for (int i = 0; i < pgs.getUnits().size(); i++) {
-            Unit u = pgs.getUnits().get(i);
-            UnitActionAssignment uaa = gs.getUnitActions().get(u);
-            if (u.getPlayer() == player && uaa == null) {
-                masks[u.getY()][u.getX()][0] = 1;
-                UnitAction.getValidActionArray(u, gs, utt, masks[u.getY()][u.getX()], maxAttackRadius, 1);
-            }
-        }
-        return masks;
     }
 
     public String sendUTT() throws Exception {
@@ -204,29 +174,24 @@ public class JNIGridnetClient {
     }
 
     public Response reset(int player) throws Exception {
+        ai1 = ai1.clone();
         ai1.reset();
         ai2 = ai2.clone();
         ai2.reset();
         pgs = PhysicalGameState.load(mapPath, utt);
         gs = new GameState(pgs, utt);
+        gs.setMode(mode);
 
         if (!mode.equals("harvest") && !mode.equals("ctf") && !mode.equals("default")) {
-            gs.setMode(mode);
             spawner = new Spawner(mode, utt);
             spawner.spawn(gs);
-        }
-
-        if (partialObs) {
-            player1gs = new PartiallyObservableGameState(gs, player);
-        } else {
-            player1gs = gs;
         }
 
         for (int i = 0; i < rewards.length; i++) {
             rewards[i] = 0;
             dones[i] = false;
         }
-        response.set(ai1.getObservation(player, player1gs), rewards, dones, "{}");
+        response.set(null, rewards, dones, "{}");
         return response;
     }
 
