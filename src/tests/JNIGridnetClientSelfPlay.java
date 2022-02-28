@@ -37,6 +37,7 @@ import rts.UnitAction;
 import rts.UnitActionAssignment;
 import rts.units.Unit;
 import rts.units.UnitTypeTable;
+import util.Spawner;
 import weka.core.pmml.jaxbbindings.False;
 
 /**
@@ -55,7 +56,6 @@ import weka.core.pmml.jaxbbindings.False;
  */
 public class JNIGridnetClientSelfPlay {
 
-
     // Settings
     public RewardFunctionInterface[] rfs;
     String micrortsPath;
@@ -67,9 +67,9 @@ public class JNIGridnetClientSelfPlay {
     // Internal State
     PhysicalGameStateJFrame w;
     public JNIInterface[] ais = new JNIInterface[2];
-    public PhysicalGameState pgs;
-    public GameState gs;
-    public GameState[] playergs = new GameState[2];
+    PhysicalGameState pgs;
+    GameState gs;
+    GameState[] playergs = new GameState[2];
     boolean gameover = false;
     boolean layerJSON = true;
     public int renderTheme = PhysicalGameStatePanel.COLORSCHEME_WHITE;
@@ -83,7 +83,12 @@ public class JNIGridnetClientSelfPlay {
     Response[] response = new Response[2];
     PlayerAction[] pas = new PlayerAction[2];
 
-    public JNIGridnetClientSelfPlay(RewardFunctionInterface[] a_rfs, String a_micrortsPath, String a_mapPath, UnitTypeTable a_utt, boolean partial_obs) throws Exception{
+    // spawning
+    Spawner spawner;
+    String mode;
+
+    public JNIGridnetClientSelfPlay(RewardFunctionInterface[] a_rfs, String a_micrortsPath, String a_mapPath,
+            UnitTypeTable a_utt, boolean partial_obs) throws Exception {
         micrortsPath = a_micrortsPath;
         mapPath = a_mapPath;
         rfs = a_rfs;
@@ -99,15 +104,34 @@ public class JNIGridnetClientSelfPlay {
         // initialize storage
         for (int i = 0; i < numPlayers; i++) {
             ais[i] = new JNIAI(100, 0, utt);
-            masks[i] = new int[pgs.getHeight()][pgs.getWidth()][1+6+4+4+4+4+utt.getUnitTypes().size()+maxAttackRadius*maxAttackRadius];
+            masks[i] = new int[pgs.getHeight()][pgs.getWidth()][1 + 6 + 4 + 4 + 4 + 4 + utt.getUnitTypes().size()
+                    + maxAttackRadius * maxAttackRadius];
             rewards[i] = new double[rfs.length];
             dones[i] = new boolean[rfs.length];
             response[i] = new Response(null, null, null, null);
         }
+
+        // minigame spawn
+        if (a_mapPath.equals("maps/Risk/mine.xml"))
+            mode = "mine";
+        else if (a_mapPath.equals("maps/Risk/skirmish.xml"))
+            mode = "skirmish";
+        else if (a_mapPath.equals("maps/Risk/harvest.xml"))
+            mode = "harvest";
+        else if (a_mapPath.equals("maps/CTF/ctf.xml"))
+            mode = "ctf";
+        else if (a_mapPath.equals("maps/Risk/tower.xml"))
+            mode = "defense";
+        else if (a_mapPath.equals("maps/Risk/blockade.xml"))
+            mode = "blockade";
+        else if (a_mapPath.contains("lava"))
+            mode = "lava";
+        else
+            mode = "default";
     }
 
     public byte[] render(boolean returnPixels) throws Exception {
-        if (w==null) {
+        if (w == null) {
             w = PhysicalGameStatePanel.newVisualizer(gs, 640, 640, partialObs, null, renderTheme);
         }
         w.setStateCloning(gs);
@@ -117,16 +141,16 @@ public class JNIGridnetClientSelfPlay {
             return null;
         }
         BufferedImage image = new BufferedImage(w.getWidth(),
-        w.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
+                w.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
         w.paint(image.getGraphics());
 
-        WritableRaster raster = image .getRaster();
+        WritableRaster raster = image.getRaster();
         DataBufferByte data = (DataBufferByte) raster.getDataBuffer();
         return data.getData();
     }
 
     public void gameStep(int[][] action1, int[][] action2) throws Exception {
-        TraceEntry te  = new TraceEntry(gs.getPhysicalGameState().clone(), gs.getTime());
+        TraceEntry te = new TraceEntry(gs.getPhysicalGameState().clone(), gs.getTime());
         for (int i = 0; i < numPlayers; i++) {
             playergs[i] = gs;
             if (partialObs) {
@@ -150,10 +174,10 @@ public class JNIGridnetClientSelfPlay {
                 dones[i][j] = rfs[j].isDone();
             }
             response[i].set(
-                ais[i].getObservation(i, playergs[i]),
-                rewards[i],
-                dones[i],
-                "{}");
+                    ais[i].getObservation(i, playergs[i]),
+                    rewards[i],
+                    dones[i],
+                    "{}");
         }
     }
 
@@ -165,8 +189,9 @@ public class JNIGridnetClientSelfPlay {
                 }
             }
         }
-        for (Unit u: pgs.getUnits()) {
-            final UnitActionAssignment uaa = gs.getActionAssignment(u);
+        for (int i = 0; i < pgs.getUnits().size(); i++) {
+            Unit u = pgs.getUnits().get(i);
+            UnitActionAssignment uaa = gs.getUnitActions().get(u);
             if (u.getPlayer() == player && uaa == null) {
                 masks[player][u.getY()][u.getX()][0] = 1;
                 UnitAction.getValidActionArray(u, gs, utt, masks[player][u.getY()][u.getX()], maxAttackRadius, 1);
@@ -184,6 +209,13 @@ public class JNIGridnetClientSelfPlay {
     public void reset() throws Exception {
         pgs = PhysicalGameState.load(mapPath, utt);
         gs = new GameState(pgs, utt);
+        gs.setMode(mode);
+
+        if (!mode.equals("harvest") && !mode.equals("ctf") && !mode.equals("default")) {
+            spawner = new Spawner(mode, utt);
+            spawner.spawn(gs);
+        }
+
         for (int i = 0; i < numPlayers; i++) {
             playergs[i] = gs;
             if (partialObs) {
@@ -195,10 +227,10 @@ public class JNIGridnetClientSelfPlay {
                 dones[i][j] = false;
             }
             response[i].set(
-                ais[i].getObservation(i, playergs[i]),
-                rewards[i],
-                dones[i],
-                "{}");
+                    ais[i].getObservation(i, playergs[i]),
+                    rewards[i],
+                    dones[i],
+                    "{}");
         }
 
         // return response;
@@ -209,8 +241,9 @@ public class JNIGridnetClientSelfPlay {
     }
 
     public void close() throws Exception {
-        if (w!=null) {
-            w.dispose();    
+        if (w != null) {
+            w.dispose();
         }
     }
-}
+}>>>>>>>94979 a1(updated clients for minigames
+)

@@ -33,6 +33,7 @@ import rts.UnitAction;
 import rts.UnitActionAssignment;
 import rts.units.Unit;
 import rts.units.UnitTypeTable;
+import util.Spawner;
 import weka.core.pmml.jaxbbindings.False;
 
 /**
@@ -74,7 +75,12 @@ public class JNIBotClient {
     PlayerAction pa1;
     PlayerAction pa2;
 
-    public JNIBotClient(RewardFunctionInterface[] a_rfs, String a_micrortsPath, String a_mapPath, AI a_ai1, AI a_ai2, UnitTypeTable a_utt, boolean partial_obs) throws Exception{
+    // spawning
+    Spawner spawner;
+    String mode;
+
+    public JNIBotClient(RewardFunctionInterface[] a_rfs, String a_micrortsPath, String a_mapPath, AI a_ai1, AI a_ai2,
+            UnitTypeTable a_utt, boolean partial_obs) throws Exception {
         micrortsPath = a_micrortsPath;
         mapPath = a_mapPath;
         rfs = a_rfs;
@@ -93,14 +99,33 @@ public class JNIBotClient {
         pgs = PhysicalGameState.load(mapPath, utt);
 
         // initialize storage
-        masks = new int[pgs.getHeight()][pgs.getWidth()][1+6+4+4+4+4+utt.getUnitTypes().size()+maxAttackRadius*maxAttackRadius];
+        masks = new int[pgs.getHeight()][pgs.getWidth()][1 + 6 + 4 + 4 + 4 + 4 + utt.getUnitTypes().size()
+                + maxAttackRadius * maxAttackRadius];
         rewards = new double[rfs.length];
         dones = new boolean[rfs.length];
         response = new Response(null, null, null, null);
+
+        // minigame spawn
+        if (a_mapPath.equals("maps/Risk/mine.xml"))
+            mode = "mine";
+        else if (a_mapPath.equals("maps/Risk/skirmish.xml"))
+            mode = "skirmish";
+        else if (a_mapPath.equals("maps/Risk/harvest.xml"))
+            mode = "harvest";
+        else if (a_mapPath.equals("maps/CTF/ctf.xml"))
+            mode = "ctf";
+        else if (a_mapPath.equals("maps/Risk/tower.xml"))
+            mode = "defense";
+        else if (a_mapPath.equals("maps/Risk/blockade.xml"))
+            mode = "blockade";
+        else if (a_mapPath.contains("lava"))
+            mode = "lava";
+        else
+            mode = "default";
     }
 
     public byte[] render(boolean returnPixels) throws Exception {
-        if (w==null) {
+        if (w == null) {
             w = PhysicalGameStatePanel.newVisualizer(gs, 640, 640, false, null, renderTheme);
         }
         w.setStateCloning(gs);
@@ -109,11 +134,10 @@ public class JNIBotClient {
         if (!returnPixels) {
             return null;
         }
-        BufferedImage image = new BufferedImage(w.getWidth(),
-        w.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
+        BufferedImage image = new BufferedImage(w.getWidth(), w.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
         w.paint(image.getGraphics());
 
-        WritableRaster raster = image .getRaster();
+        WritableRaster raster = image.getRaster();
         DataBufferByte data = (DataBufferByte) raster.getDataBuffer();
         return data.getData();
     }
@@ -124,7 +148,7 @@ public class JNIBotClient {
 
         gs.issueSafe(pa1);
         gs.issueSafe(pa2);
-        TraceEntry te  = new TraceEntry(gs.getPhysicalGameState().clone(), gs.getTime());
+        TraceEntry te = new TraceEntry(gs.getPhysicalGameState().clone(), gs.getTime());
         te.addPlayerAction(pa1.clone());
         te.addPlayerAction(pa2.clone());
 
@@ -139,11 +163,7 @@ public class JNIBotClient {
             dones[i] = rfs[i].isDone();
             rewards[i] = rfs[i].getReward();
         }
-        response.set(
-            null,
-            rewards,
-            dones,
-            "{}");
+        response.set(null, rewards, dones, "{}");
         return response;
     }
 
@@ -160,22 +180,25 @@ public class JNIBotClient {
         ai2.reset();
         pgs = PhysicalGameState.load(mapPath, utt);
         gs = new GameState(pgs, utt);
+        gs.setMode(mode);
+
+        if (!mode.equals("harvest") && !mode.equals("ctf") && !mode.equals("default")) {
+            spawner = new Spawner(mode, utt);
+            spawner.spawn(gs);
+        }
 
         for (int i = 0; i < rewards.length; i++) {
             rewards[i] = 0;
             dones[i] = false;
         }
-        response.set(
-            null,
-            rewards,
-            dones,
-            "{}");
+        response.set(null, rewards, dones, "{}");
         return response;
     }
 
     public void close() throws Exception {
-        if (w!=null) {
-            w.dispose();    
+        if (w != null) {
+            w.dispose();
         }
     }
-}
+}>>>>>>>94979 a1(updated clients for minigames
+)
