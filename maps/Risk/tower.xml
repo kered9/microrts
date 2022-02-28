@@ -1,0 +1,17 @@
+<rts.PhysicalGameState width="8" height="8">
+  <terrain>0000000000000000000000000000000000000000000000000000000000000000</terrain>
+  <players>
+    <rts.Player ID="0" resources="0">
+    </rts.Player>
+    <rts.Player ID="1" resources="30">
+    </rts.Player>
+  </players>
+  <units>
+    <rts.units.Unit type="Base" ID="0" player="0" x="4" y="7" resources="0" hitpoints="10" >
+    </rts.units.Unit>
+    <rts.units.Unit type="Base" ID="1" player="1" x="4" y="0" resources="0" hitpoints="10" >
+    </rts.units.Unit>
+    <rts.units.Unit type="Barracks" ID="2" player="1" x="5" y="0" resources="0" hitpoints="10" >
+    </rts.units.Unit>
+  </units>
+</rts.PhysicalGameState>
