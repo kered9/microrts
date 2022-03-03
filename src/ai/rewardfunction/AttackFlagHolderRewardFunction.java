@@ -9,7 +9,7 @@ import rts.UnitAction;
 import rts.units.Unit;
 import util.Pair;
 
-public class AttackHolderRewardFunction extends RewardFunctionInterface {
+public class AttackFlagHolderRewardFunction extends RewardFunctionInterface {
 
     public static float ATTACK_REWARD = 1;
     public static float HOLDER_BOOST = 2;
