@@ -9,7 +9,7 @@ import rts.UnitAction;
 import rts.units.Unit;
 import util.Pair;
 
-public class CloseHolderToBaseRewardFunction extends RewardFunctionInterface {
+public class FlagHolderCloseToBaseRewardFunction extends RewardFunctionInterface {
     public void computeReward(int maxplayer, int minplayer, TraceEntry te, GameState afterGs) {
         reward = 0.0;
         done = false;
